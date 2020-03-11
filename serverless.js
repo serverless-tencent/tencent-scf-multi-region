@@ -1,4 +1,5 @@
 const { Component } = require('@serverless/core')
+const random = require('ext/string/random')
 
 // Create a new component by extending the Component Class
 class TencentSCFMultiRegion extends Component {
@@ -30,7 +31,9 @@ class TencentSCFMultiRegion extends Component {
   async default(inputs = {}) {
     const regionList = typeof inputs.region == 'string' ? [inputs.region] : inputs.region
     const baseInputs = {}
-    const functions = {}
+    const functions = {
+      functionList: []
+    }
     for (const eveKey in inputs) {
       if (eveKey != 'region' && eveKey.indexOf('ap-') != 0) {
         baseInputs[eveKey] = inputs[eveKey]
@@ -45,10 +48,9 @@ class TencentSCFMultiRegion extends Component {
       if (inputs[regionList[i]]) {
         tempInputs = this.mergeJson(inputs[regionList[i]], tempInputs)
       }
-      const tencentCloudFunction = await this.load(
-        '@serverless/tencent-scf',
-        `${tempInputs.region}-${tempInputs.name}`
-      )
+      const tempKey = `${tempInputs.region}-${random({ length: 6 })}`
+      functions.functionList.push(tempKey)
+      const tencentCloudFunction = await this.load('@serverless/tencent-scf', tempKey)
       functions[tempInputs.region] = await tencentCloudFunction(tempInputs)
       this.context.status(`Deployed ${regionList[i]} funtion`)
     }
@@ -63,14 +65,15 @@ class TencentSCFMultiRegion extends Component {
     const removeInput = {
       fromClientRemark: inputs.fromClientRemark || 'tencent-scf-multi-region'
     }
-    for (const eveKey in this.state) {
-      this.context.status(`Removing ${eveKey} funtion`)
+    for (let i = 0; i < this.state.functionList.length; i++) {
+      console.log(this.state.functionList[i])
+      this.context.status(`Removing ${this.state.functionList[i]} funtion`)
       const tencentCloudFunction = await this.load(
         '@serverless/tencent-scf',
-        `${eveKey}-${this.state[eveKey].Name}`
+        this.state.functionList[i]
       )
       await tencentCloudFunction.remove(removeInput)
-      this.context.status(`Removed ${eveKey} funtion`)
+      this.context.status(`Removed ${this.state.functionList[i]} funtion`)
     }
 
     // after removal we clear the state to keep it in sync with the service API
