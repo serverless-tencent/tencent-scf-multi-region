@@ -31,9 +31,9 @@ class TencentSCFMultiRegion extends Component {
   async default(inputs = {}) {
     const regionList = typeof inputs.region == 'string' ? [inputs.region] : inputs.region
     const baseInputs = {}
-    const functions = {
-      functionList: []
-    }
+    const functions = {}
+
+    const state = []
     for (const eveKey in inputs) {
       if (eveKey != 'region' && eveKey.indexOf('ap-') != 0) {
         baseInputs[eveKey] = inputs[eveKey]
@@ -49,13 +49,13 @@ class TencentSCFMultiRegion extends Component {
         tempInputs = this.mergeJson(inputs[regionList[i]], tempInputs)
       }
       const tempKey = `${tempInputs.region}-${random({ length: 6 })}`
-      functions.functionList.push(tempKey)
+      state.push(tempKey)
       const tencentCloudFunction = await this.load('@serverless/tencent-scf', tempKey)
       functions[tempInputs.region] = await tencentCloudFunction(tempInputs)
       this.context.status(`Deployed ${regionList[i]} funtion`)
     }
 
-    this.state = functions
+    this.state = state
     await this.save()
 
     return functions
@@ -65,15 +65,11 @@ class TencentSCFMultiRegion extends Component {
     const removeInput = {
       fromClientRemark: inputs.fromClientRemark || 'tencent-scf-multi-region'
     }
-    for (let i = 0; i < this.state.functionList.length; i++) {
-      console.log(this.state.functionList[i])
-      this.context.status(`Removing ${this.state.functionList[i]} funtion`)
-      const tencentCloudFunction = await this.load(
-        '@serverless/tencent-scf',
-        this.state.functionList[i]
-      )
+    for (let i = 0; i < this.state.length; i++) {
+      this.context.status(`Removing ${this.state[i]} funtion`)
+      const tencentCloudFunction = await this.load('@serverless/tencent-scf', this.state[i])
       await tencentCloudFunction.remove(removeInput)
-      this.context.status(`Removed ${this.state.functionList[i]} funtion`)
+      this.context.status(`Removed ${this.state[i]} funtion`)
     }
 
     // after removal we clear the state to keep it in sync with the service API
