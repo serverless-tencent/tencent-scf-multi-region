@@ -48,7 +48,7 @@ class TencentSCFMultiRegion extends Component {
       if (inputs[regionList[i]]) {
         tempInputs = this.mergeJson(inputs[regionList[i]], tempInputs)
       }
-      const tempKey = `${tempInputs.region}-${random({ length: 6 })}`
+      const tempKey = `${tempInputs.region}-${tempInputs.name}`
       state.push(tempKey)
       const tencentCloudFunction = await this.load('@serverless/tencent-scf', tempKey)
       functions[tempInputs.region] = await tencentCloudFunction(tempInputs)
