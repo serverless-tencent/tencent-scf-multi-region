@@ -34,38 +34,74 @@ $ touch serverless.yml
 ```yml
 # serverless.yml
 
-restApi:
-  component: '@serverless/tencent-apigateway-multi-region'
+hello_world:
+  component: '@serverless/tencent-scf-multi-region'
   inputs:
-    region:
+    codeUri: ./
+    description: This is a template function
+    region: 
+      -ap-guangzhou
       - ap-shanghai
-      - ap-guangzhou
-    protocols:
-      - https
-    serviceName: serverless
-    description: the serverless service
-    environment: release
-    endpoints:
-      - path: /users
-        method: POST
-        function:
-          functionName: myFunction
-      - path: /userss
-        method: POST
-        function:
-          functionName: myFunction
+    environment:
+      variables:
+        ENV_FIRST: env1
+        ENV_SECOND: env2
+    handler: index.main_handler
+    memorySize: 128
+    name: hello_world
+    runtime: Python3.6
+    timeout: 3
+    events:
+      - apigw:
+          name: serverless_test
+          parameters:
+            protocols:
+              - http
+            description: the serverless service
+            environment: release
+            endpoints:
+              - path: /users
+                method: POST
+              - path: /usersss
+                method: POST
+    ap-guangzhou:
+      environment:
+        variables:
+          ENV_FIRST: env2
     ap-shanghai:
-      protocols:
-        - https
+      events:
+        - apigw:
+            name: serverless_test
+            parameters:
+              protocols:
+                - http
+              description: the serverless service
+              environment: release
+              endpoints:
+                - path: /usersd
+                  method: POST
 
 ```
 
 - 该组件配置与`tencent-scf`组件配置一致，针对不同地域的额外拓展，可以增加以地域为`key`的对象，地域对象下的内容也是和`tencent-scf`组件配置一致：
 
 ```text
+ap-guangzhou:
+  environment:
+    variables:
+      ENV_FIRST: env2
 ap-shanghai:
-  protocols:
-    - https
+  events:
+    - apigw:
+        name: serverless_test
+        parameters:
+          protocols:
+            - http
+          description: the serverless service
+          environment: release
+          endpoints:
+            - path: /usersd
+              method: POST
 ```
 
 ### 3. 部署
